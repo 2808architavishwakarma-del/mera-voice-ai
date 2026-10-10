@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mera AI</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #101124;
+  color: white;
+  text-align: center;
+  padding: 25px 16px;
+}
+.orb {
+  width: 145px;
+  height: 145px;
+  margin: 45px auto 25px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ff9de2, #7865ff 55%, #00d9ff);
+  box-shadow: 0 0 45px #7766ff;
+  animation: glow 2s infinite alternate;
+}
+@keyframes glow {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+h1 { color: #c8baff; }
+p { color: #ddd; }
+button {
+  border: 0;
+  border-radius: 28px;
+  padding: 15px 23px;
+  margin: 8px;
+  font-size: 16px;
+  background: #7865ff;
+  color: white;
+}
+#status { margin: 20px; min-height: 25px; }
+</style>
+</head>
+<body>
+<h1>✨ Mera AI</h1>
+<p>Tumhara personal AI dost</p>
+<div class="orb"></div>
+<h2>Namaste dost!</h2>
+<p id="status">Chalo, baat karte hain!</p>
+<button onclick="speak()">🔊 AI ko suno</button>
+<button onclick="listen()">🎤 Bolo</button>
+
+<script>
+function speak() {
+  const msg = new SpeechSynthesisUtterance(
+    "Namaste dost! Main tumhara AI assistant hoon. Batao, aaj kaise ho?"
+  );
+  msg.lang = "hi-IN";
+  msg.pitch = 1.15;
+  speechSynthesis.speak(msg);
+}
+
+function listen() {
+  const SR = window.SpeechRecognition ||
+             window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById("status").textContent =
+      "Voice typing ke liye Chrome ka support check karo.";
+    return;
+  }
+  const rec = new SR();
+  rec.lang = "hi-IN";
+  rec.onstart = () => {
+    document.getElementById("status").textContent =
+      "Sun raha hoon dost...";
+  };
+  rec.onresult = e => {
+    const words = e.results[0][0].transcript;
+    document.getElementById("status").textContent =
+      "Tumne kaha: " + words;
+    const reply = new SpeechSynthesisUtterance(
+      "Dost, tumne kaha " + words +
+      ". Main tumhari baat sun raha hoon!"
+    );
+    reply.lang = "hi-IN";
+    reply.pitch = 1.15;
+    speechSynthesis.speak(reply);
+  };
+  rec.onerror = () => {
+    document.getElementById("status").textContent =
+      "Microphone permission check karo.";
+  };
+  rec.start();
+}
+</script>
+</body>
+  </html>
