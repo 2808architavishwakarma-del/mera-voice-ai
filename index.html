@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mera AI</title>
+<title>Mera Voice AI</title>
 <style>
 body {
   margin: 0;
+  padding: 25px 16px;
   font-family: Arial, sans-serif;
   background: #101124;
   color: white;
   text-align: center;
-  padding: 25px 16px;
 }
+h1 { color: #c8baff; }
 .orb {
   width: 145px;
   height: 145px;
-  margin: 45px auto 25px;
+  margin: 35px auto;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ff9de2, #7865ff 55%, #00d9ff);
+  background: radial-gradient(circle, #ff9de2, #7865ff 55%, #090dff);
   box-shadow: 0 0 45px #7766ff;
   animation: glow 2s infinite alternate;
 }
@@ -26,8 +27,6 @@ body {
   from { transform: scale(1); }
   to { transform: scale(1.07); }
 }
-h1 { color: #c8baff; }
-p { color: #ddd; }
 button {
   border: 0;
   border-radius: 28px;
@@ -37,60 +36,106 @@ button {
   background: #7865ff;
   color: white;
 }
-#status { margin: 20px; min-height: 25px; }
+input {
+  box-sizing: border-box;
+  width: 95%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 0;
+  margin: 12px 0;
+  font-size: 16px;
+}
+#status {
+  margin: 20px auto;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
 </style>
 </head>
 <body>
-<h1>✨ Mera AI</h1>
-<p>Tumhara personal AI dost</p>
+<h1>✨ Mera Voice AI</h1>
+<p>Tumhara apna personal AI dost</p>
 <div class="orb"></div>
-<h2>Namaste dost!</h2>
-<p id="status">Chalo, baat karte hain!</p>
-<button onclick="speak()">🔊 AI ko suno</button>
-<button onclick="listen()">🎤 Bolo</button>
+
+<input id="question" placeholder="Yahan apna sawaal likho..." />
+<br>
+<button onclick="askAI()">Poochho</button>
+<button onclick="listen()">🎙️ Bolo</button>
+<button onclick="speakWelcome()">🔊 AI ko suno</button>
+
+<div id="status">Namaste dost! Mujhse kuch bhi poochho.</div>
 
 <script>
-function speak() {
-  const msg = new SpeechSynthesisUtterance(
-    "Namaste dost! Main tumhara AI assistant hoon. Batao, aaj kaise ho?"
-  );
+const WORKER_URL = "https://damp-meadow-1f03.2808architavishwakarma.workers.dev/";
+
+function show(text) {
+  document.getElementById("status").textContent = text;
+}
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const msg = new SpeechSynthesisUtterance(text);
   msg.lang = "hi-IN";
-  msg.pitch = 1.15;
-  speechSynthesis.speak(msg);
+  msg.rate = 0.95;
+  window.speechSynthesis.speak(msg);
+}
+
+function speakWelcome() {
+  speak("Namaste dost! Main tumhara Mera Voice AI hoon. Batao, kya poochhna hai?");
+}
+
+async function askAI() {
+  const question = document.getElementById("question").value.trim();
+  if (!question) {
+    show("Pehle apna sawaal likho ya Bolo button dabao.");
+    return;
+  }
+
+  if (WORKER_URL.includes("YAHAN_APNA")) {
+    show("Pehle code mein apna Cloudflare Worker URL lagao.");
+    return;
+  }
+
+  show("Soch raha hoon, dost...");
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: question })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI se jawab nahi mila.");
+    }
+
+    const reply = data.reply || "Maaf karna, jawab nahi mila.";
+    show(reply);
+    speak(reply);
+  } catch (error) {
+    show("Dikkat: " + error.message);
+  }
 }
 
 function listen() {
-  const SR = window.SpeechRecognition ||
-             window.webkitSpeechRecognition;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    document.getElementById("status").textContent =
-      "Voice typing ke liye Chrome ka support check karo.";
+    show("Voice typing ke liye Android Chrome mein microphone permission do, ya sawaal type karo.");
     return;
   }
-  const rec = new SR();
-  rec.lang = "hi-IN";
-  rec.onstart = () => {
-    document.getElementById("status").textContent =
-      "Sun raha hoon dost...";
+
+  const recognition = new SR();
+  recognition.lang = "hi-IN";
+  recognition.onstart = () => show("Sun raha hoon, bolo dost...");
+  recognition.onresult = (event) => {
+    const words = event.results[0][0].transcript;
+    document.getElementById("question").value = words;
+    askAI();
   };
-  rec.onresult = e => {
-    const words = e.results[0][0].transcript;
-    document.getElementById("status").textContent =
-      "Tumne kaha: " + words;
-    const reply = new SpeechSynthesisUtterance(
-      "Dost, tumne kaha " + words +
-      ". Main tumhari baat sun raha hoon!"
-    );
-    reply.lang = "hi-IN";
-    reply.pitch = 1.15;
-    speechSynthesis.speak(reply);
-  };
-  rec.onerror = () => {
-    document.getElementById("status").textContent =
-      "Microphone permission check karo.";
-  };
-  rec.start();
+  recognition.onerror = () => show("Awaaz sunne mein dikkat hui. Dobara koshish karo ya type karo.");
+  recognition.start();
 }
 </script>
 </body>
-  </html>
+</html>
