@@ -72,14 +72,33 @@ function show(text) {
   document.getElementById("status").textContent = text;
 }
 
+
 function speak(text) {
-  if (!("speechSynthesis" in window)) return;
+  if (!("speechSynthesis" in window)) {
+    alert("Tumhare browser mein voice support nahi hai.");
+    return;
+  }
+
   window.speechSynthesis.cancel();
+
   const msg = new SpeechSynthesisUtterance(text);
   msg.lang = "hi-IN";
-  msg.rate = 0.95;
+  msg.rate = 0.9;
+  msg.pitch = 1.15;
+
+  const voices = window.speechSynthesis.getVoices();
+  const femaleVoice = voices.find(v =>
+    /female|woman|google हिन्दी|google hindi|हिन्दी/i.test(v.name) &&
+    /hi-IN|hi_/i.test(v.lang)
+  );
+
+  if (femaleVoice) {
+    msg.voice = femaleVoice;
+  }
+
   window.speechSynthesis.speak(msg);
 }
+  
 
 function speakWelcome() {
   speak("Namaste dost! Main tumhara Mera Voice AI hoon. Batao, kya poochhna hai?");
